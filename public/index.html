@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestion Cotisations – Chorale Mélodie Céleste</title>
+  
+<!-- Firebase SDKs -->
+  <script defer src="/__/firebase/12.0.0/firebase-app-compat.js"></script>
+  <script defer src="/__/firebase/12.0.0/firebase-auth-compat.js"></script>
+  <script defer src="/__/firebase/12.0.0/firebase-firestore-compat.js"></script>
+  <script defer src="/__/firebase/init.js"></script>
+  <script defer src="index.js"></script>
+  
+  <!-- CSS interne -->
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      font-family: Arial, sans-serif;
+      background: #f7fafc;
+      color: #2d3748;
+    }
+    .hidden { display: none; }
+    section {
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2, h3 { margin-bottom: 16px; color: #2d3748; }
+    input[type="email"],
+    input[type="password"],
+    input[type="text"],
+    input[type="number"],
+    input[type="date"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border: 1px solid #cbd5e0;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button {
+      display: inline-block;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 4px;
+      background: #3182ce;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+    button:hover { background: #2b6cb0; }
+    button:disabled { background: #a0aec0; cursor: not-allowed; }
+    button.secondary {
+      background: #718096;
+    }
+    button.secondary:hover {
+      background: #4a5568;
+    }
+    button.danger {
+      background: #e53e3e;
+    }
+    button.danger:hover {
+      background: #c53030;
+    }
+    button.success {
+      background: #38a169;
+    }
+    button.success:hover {
+      background: #2f855a;
+    }
+    
+    #dashboard table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    #dashboard th,
+    #dashboard td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+    }
+    #dashboard th { 
+      background: #edf2f7; 
+      font-weight: bold;
+    }
+    
+    #memberDetail ul {
+      list-style: none;
+      padding: 0;
+      margin-bottom: 16px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    #memberDetail ul li {
+      padding: 10px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    #backBtn {
+      background: none;
+      color: #3182ce;
+      margin-bottom: 16px;
+      padding: 0;
+      text-decoration: underline;
+    }
+    
+    .form-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .form-row input {
+      flex: 1;
+      margin-bottom: 0;
+    }
+    
+    .error {
+      color: #e53e3e;
+      background: #fed7d7;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+    .success {
+      color: #38a169;
+      background: #c6f6d5;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #718096;
+    }
+    
+    .header-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .stats {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f7fafc;
+      border-radius: 6px;
+    }
+    .stat-item {
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 24px;
+      font-weight: bold;
+      color: #3182ce;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #718096;
+    }
+    
+    .add-member-form {
+      background: #f7fafc;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+    .add-member-form h4 {
+      margin-top: 0;
+      color: #2d3748;
+    }
+    
+    .payment-item {
+      background: #f9f9f9;
+      margin-bottom: 5px;
+      border-radius: 4px;
+    }
+    .payment-date {
+      font-weight: bold;
+      color: #2d3748;
+    }
+    .payment-amount {
+      color: #38a169;
+      font-weight: bold;
+    }
+    
+    @media (max-width: 600px) {
+      section {
+        margin: 20px;
+        padding: 15px;
+      }
+      .form-row {
+        flex-direction: column;
+      }
+      .header-section {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .stats {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Messages d'erreur/succès -->
+  <div id="messages"></div>
+
+  <!-- Connexion -->
+  <section id="login">
+    <h2>🎵 Chorale Mélodie Céleste</h2>
+    <!-- <h3>Gestion des Cotisations des Femmes</h3> -->
+    <div id="loginError"></div>
+    <input id="email" type="email" placeholder="Email administrateur" />
+    <input id="password" type="password" placeholder="Mot de passe" />
+    <button id="btnLogin">Se connecter</button>
+    <div class="loading hidden" id="loginLoading">Connexion en cours...</div>
+  </section>
+
+  <!-- Tableau de bord -->
+  <section id="dashboard" class="hidden">
+    <div class="header-section">
+      <h2>👥 Gestion des Membres</h2>
+      <button id="btnLogout" class="danger">Déconnexion</button>
+    </div>
+    
+    <!-- Statistiques -->
+    <div class="stats" id="stats">
+      <div class="stat-item">
+        <div class="stat-number" id="totalMembers">0</div>
+        <div class="stat-label">Membres</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="totalAmount">0 €</div>
+        <div class="stat-label">Total Cotisé</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="avgAmount">0 €</div>
+        <div class="stat-label">Moyenne/Membre</div>
+      </div>
+    </div>
+    
+    <!-- Formulaire d'ajout de membre -->
+    <div class="add-member-form">
+      <h4>➕ Ajouter un nouveau membre</h4>
+      <div id="addMemberError"></div>
+      <form id="addMemberForm">
+        <div class="form-row">
+          <input id="newFirstName" type="text" placeholder="Prénom" required />
+          <input id="newLastName" type="text" placeholder="Nom de famille" required />
+        </div>
+        <div class="form-row">
+          <input id="newPhone" type="text" placeholder="Téléphone (optionnel)" />
+          <input id="newDateJoin" type="date" title="Date d'adhésion" />
+        </div>
+        <button type="submit" class="success">Ajouter le membre</button>
+      </form>
+    </div>
+    
+    <div class="loading hidden" id="dashboardLoading">Chargement des données...</div>
+    
+    <table id="membersTable" class="hidden">
+      <thead>
+        <tr>
+          <th>Prénom</th>
+          <th>Nom</th>
+          <th>Téléphone</th>
+          <th>Total cotisé</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="membersList"></tbody>
+    </table>
+    
+    <div id="noMembers" class="hidden">
+      <p style="text-align: center; color: #718096; padding: 40px;">
+        Aucun membre enregistré. Ajoutez le premier membre ci-dessus.
+      </p>
+    </div>
+  </section>
+
+  <!-- Détail membre -->
+  <section id="memberDetail" class="hidden">
+    <button id="backBtn">← Retour au tableau de bord</button>
+    
+    <div class="header-section">
+      <h3 id="memberName"></h3>
+      <button id="deleteMemberBtn" class="danger">Supprimer le membre</button>
+    </div>
+    
+    <div id="memberInfo" style="background: #f7fafc; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+      <p><strong>Téléphone:</strong> <span id="memberPhone">Non renseigné</span></p>
+      <p><strong>Date d'adhésion:</strong> <span id="memberJoinDate">Non renseignée</span></p>
+      <p><strong>Total cotisé:</strong> <span id="memberTotal" class="payment-amount">0 €</span></p>
+    </div>
+    
+    <h4>💰 Historique des paiements</h4>
+    <div id="paymentError"></div>
+    <ul id="paymentsList"></ul>
+    
+    <div style="background: #f7fafc; padding: 15px; border-radius: 6px;">
+      <h4>Ajouter un paiement</h4>
+      <form id="addPaymentForm">
+        <div class="form-row">
+          <input id="paymentAmount" type="number" placeholder="Montant (€)" min="0.01" step="0.01" required/>
+          <input id="paymentDate" type="date" title="Date du paiement" />
+          <button type="submit" class="success">Ajouter</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</body>
+</html>
