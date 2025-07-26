@@ -155,15 +155,16 @@ async function loadMembers() {
 
     members.forEach(member => {
       const tr = document.createElement('tr');
+      tr.className = 'hover:bg-gray-50 transition-colors';
       tr.innerHTML = `
-        <td>${member.data.firstName || '–'}</td>
-        <td>${member.data.lastName  || '–'}</td>
-        <td>${member.data.phone     || 'Non renseigné'}</td>
-        <td class="has-text-success">
-          ${member.total.toFixed(2)} €
+        <td class="px-4 md:px-6 py-4 text-sm font-medium text-gray-900">${member.data.firstName || '–'}</td>
+        <td class="px-4 md:px-6 py-4 text-sm text-gray-900">${member.data.lastName  || '–'}</td>
+        <td class="px-4 md:px-6 py-4 text-sm text-gray-600 hidden md:table-cell">${member.data.phone     || 'Non renseigné'}</td>
+        <td class="px-4 md:px-6 py-4 text-sm font-semibold text-green-600">
+          ${member.total.toFixed(0)} FCFA
         </td>
-        <td>
-          <button class="detailBtn" data-id="${member.id}">
+        <td class="px-4 md:px-6 py-4 text-sm">
+          <button class="detailBtn bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium transition-colors" data-id="${member.id}">
             Voir détails
           </button>
         </td>
@@ -186,11 +187,11 @@ async function loadMembers() {
 
 // Mise à jour des stats
 function updateStats(count, total) {
-  document.getElementById('totalMembers').textContent = count;
+  document.getElementById('totalMembers').textContent = count.toLocaleString();
   document.getElementById('totalAmount' ).textContent =
-    total.toFixed(2) + ' €';
+    total.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
   document.getElementById('avgAmount').textContent =
-    count > 0 ? (total/count).toFixed(2) + ' €' : '0 €';
+    count > 0 ? (total/count).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA' : '0 FCFA';
 }
 
 // Somme des paiements
@@ -222,7 +223,7 @@ async function showDetail(memberId) {
         : 'Non renseignée';
 
     const total = await sumPayments(memberId);
-    document.getElementById('memberTotal').textContent = total.toFixed(2) + ' €';
+    document.getElementById('memberTotal').textContent = total.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
 
     // Paiements
     const paysSnap = await db
@@ -232,19 +233,22 @@ async function showDetail(memberId) {
 
     if (paysSnap.empty) {
       paymentsList.innerHTML =
-        '<li class="has-text-grey-light">Aucun paiement enregistré</li>';
+        '<li class="text-gray-500 text-center py-4">Aucun paiement enregistré</li>';
     } else {
       paymentsList.innerHTML = paysSnap.docs.map(d => {
         const { amount, date } = d.data();
         const dateStr = date && date.toDate
           ? date.toDate().toLocaleDateString('fr-FR')
           : 'Date inconnue';
+        const formattedAmount = (amount||0).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
         return `
-          <li class="payment-item">
-            <span class="payment-date">${dateStr}</span>
-            <span class="payment-amount">${(amount||0).toFixed(2)} €</span>
+          <li class="flex justify-between items-center bg-white rounded-lg p-4 shadow-sm">
+            <div class="flex flex-col">
+              <span class="font-semibold text-gray-800">${dateStr}</span>
+              <span class="text-green-600 font-bold">${formattedAmount} FCFA</span>
+            </div>
             <button
-              class="danger is-small"
+              class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm transition-colors"
               onclick="deletePayment('${d.id}')"
             >🗑️</button>
           </li>`;
