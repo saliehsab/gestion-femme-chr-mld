@@ -153,23 +153,47 @@ async function loadMembers() {
       return { id: doc.id, data, total: memberTotal };
     }));
 
+    // Populate desktop table
     members.forEach(member => {
       const tr = document.createElement('tr');
       tr.className = 'hover:bg-gray-50 transition-colors';
       tr.innerHTML = `
-        <td class="px-4 md:px-6 py-4 text-sm font-medium text-gray-900">${member.data.firstName || '–'}</td>
-        <td class="px-4 md:px-6 py-4 text-sm text-gray-900">${member.data.lastName  || '–'}</td>
-        <td class="px-4 md:px-6 py-4 text-sm text-gray-600 hidden md:table-cell">${member.data.phone     || 'Non renseigné'}</td>
-        <td class="px-4 md:px-6 py-4 text-sm font-semibold text-green-600">
-          ${member.total.toFixed(0)} FCFA
+        <td class="px-6 py-4 text-sm font-medium text-gray-900">${member.data.firstName || '–'}</td>
+        <td class="px-6 py-4 text-sm text-gray-900">${member.data.lastName  || '–'}</td>
+        <td class="px-6 py-4 text-sm text-gray-600">${member.data.phone     || 'Non renseigné'}</td>
+        <td class="px-6 py-4 text-sm font-semibold text-green-600">
+          ${member.total.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA
         </td>
-        <td class="px-4 md:px-6 py-4 text-sm">
+        <td class="px-6 py-4 text-sm">
           <button class="detailBtn bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium transition-colors" data-id="${member.id}">
             Voir détails
           </button>
         </td>
       `;
       membersList.appendChild(tr);
+    });
+
+    // Populate mobile cards
+    const mobileCardsList = document.getElementById('mobileCardsList');
+    mobileCardsList.innerHTML = '';
+    members.forEach(member => {
+      const card = document.createElement('div');
+      card.className = 'bg-white rounded-xl p-4 shadow-sm border';
+      card.innerHTML = `
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <h4 class="font-semibold text-gray-900 text-base">${member.data.firstName || ''} ${member.data.lastName || ''}</h4>
+            <p class="text-sm text-gray-600">📞 ${member.data.phone || 'Non renseigné'}</p>
+          </div>
+          <div class="text-right">
+            <div class="text-lg font-bold text-green-600">${member.total.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA</div>
+          </div>
+        </div>
+        <button class="detailBtn w-full bg-primary-600 hover:bg-primary-700 text-white py-2 rounded-lg font-medium transition-colors text-sm" data-id="${member.id}">
+          Voir les détails
+        </button>
+      `;
+      mobileCardsList.appendChild(card);
     });
 
     document.querySelectorAll('.detailBtn').forEach(btn => {
@@ -242,15 +266,16 @@ async function showDetail(memberId) {
           : 'Date inconnue';
         const formattedAmount = (amount||0).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
         return `
-          <li class="flex justify-between items-center bg-white rounded-lg p-4 shadow-sm">
-            <div class="flex flex-col">
-              <span class="font-semibold text-gray-800">${dateStr}</span>
-              <span class="text-green-600 font-bold">${formattedAmount} FCFA</span>
+          <li class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white rounded-lg p-4 shadow-sm gap-3">
+            <div class="flex flex-col flex-1">
+              <span class="font-semibold text-gray-800 text-sm sm:text-base">📅 ${dateStr}</span>
+              <span class="text-green-600 font-bold text-base sm:text-lg">💰 ${formattedAmount} FCFA</span>
             </div>
             <button
-              class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm transition-colors"
+              class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm transition-colors shrink-0"
               onclick="deletePayment('${d.id}')"
-            >🗑️</button>
+              title="Supprimer ce paiement"
+            >🗑️ Supprimer</button>
           </li>`;
       }).join('');
     }
